@@ -38,3 +38,13 @@ An example worflow, as shown in the screenshot above, is provided in a `workflow
 <p align="center">
     <img src="workflow.png" alt="workflow">
 </p>
+
+### Helpful Guides and Documentation
+
+To get the most out of the FASHN API, we recommend you read the following guides to better understand all node features and parameters:
+1. [FASHN Features Guide: Part I (Model & Garment Controls)](https://fashn.ai/blog/getting-the-best-virtual-try-on-results-part-i)
+2. [FASHN Features Guide: Part II (Sampling Controls)](https://fashn.ai/blog/getting-the-best-virtual-try-on-results-part-ii)
+
+You can also review the offical [API Docs](https://docs.fashn.ai/) for a concise summary of each of the parameters function and usage.
+
+

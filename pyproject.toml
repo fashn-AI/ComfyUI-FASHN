@@ -1,0 +1,14 @@
+[project]
+name = "comfyui-fashn"
+description = "Node for the FASHN Virtual Try-On API. Requires an API Key from fashn.ai"
+version = "1.0.0"
+license = {file = "LICENSE"}
+
+[project.urls]
+Repository = "https://github.com/fashn-AI/ComfyUI-FASHN"
+#  Used by Comfy Registry https://comfyregistry.org
+
+[tool.comfy]
+PublisherId = ""
+DisplayName = "ComfyUI-FASHN"
+Icon = ""

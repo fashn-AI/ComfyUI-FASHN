@@ -9,6 +9,6 @@ Repository = "https://github.com/fashn-AI/ComfyUI-FASHN"
 #  Used by Comfy Registry https://comfyregistry.org
 
 [tool.comfy]
-PublisherId = ""
+PublisherId = "fashn"
 DisplayName = "ComfyUI-FASHN"
-Icon = ""
+Icon = "https://cilsrdpvqtgutxprdofn.supabase.co/storage/v1/object/public/assets/logo-enhanced_60x60.png"

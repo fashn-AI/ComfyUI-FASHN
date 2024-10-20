@@ -153,7 +153,7 @@ class FASHN:
             if status_data["status"] == "completed":
                 break
             elif status_data["status"] not in ["starting", "in_queue", "processing"]:
-                raise Exception(f"Prediction failed: {status_data.get('error')}")
+                raise Exception(f"Prediction failed with id {pred_id}: {status_data.get('error')}")
 
             pbar.update(1)
             time.sleep(3)

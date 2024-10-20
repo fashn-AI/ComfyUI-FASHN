@@ -146,7 +146,7 @@ class FASHN:
             if time.time() - start_time > 180:  # 3 minutes timeout
                 raise Exception("Maximum polling time exceeded.")
 
-            status_response = session.get(f"{ENDPOINT_URL}/status/{pred_id}", headers=headers, timeout=10)
+            status_response = session.get(f"{ENDPOINT_URL}/status/{pred_id}", headers=headers, timeout=60)
             status_response.raise_for_status()
             status_data = status_response.json()
 

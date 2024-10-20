@@ -97,7 +97,7 @@ class FASHN:
         fashn_api_key=None,
     ):
         # Environment variables
-        ENDPOINT_URL = os.getenv("FASHN_ENDPOINT_URL", "https://api.fashn.ai/v1/")
+        ENDPOINT_URL = os.getenv("FASHN_ENDPOINT_URL", "https://api.fashn.ai/v1")
         API_KEY = fashn_api_key or os.getenv("FASHN_API_KEY")
 
         if not API_KEY:

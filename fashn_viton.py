@@ -135,7 +135,7 @@ class FASHN:
 
         # Make API request
         session = requests.Session()
-        response = session.post(f"{ENDPOINT_URL}/run", headers=headers, json=inputs, timeout=10)
+        response = session.post(f"{ENDPOINT_URL}/run", headers=headers, json=inputs, timeout=60)
         response.raise_for_status()
         pred_id = response.json().get("id")
         pbar.update(1)

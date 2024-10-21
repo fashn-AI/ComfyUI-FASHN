@@ -113,6 +113,10 @@ class FASHN:
 
         pbar.update(1)
 
+        # if seed is greater than 2^32, we need to convert it to a 32-bit integer
+        if seed > 2**32:
+            seed = int(seed & 0xFFFFFFFF)
+
         # Prepare API request
         headers = {
             "Content-Type": "application/json",

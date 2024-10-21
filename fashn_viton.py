@@ -106,10 +106,17 @@ class FASHN:
         # Progress bar
         pbar = ProgressBar(total=7 + num_samples)
 
-        # Preprocess images
-        model_image, garment_image = map(self.loadimage_to_pil, [model_image, garment_image])
-        model_image, garment_image = map(self.maybe_resize_image, [model_image, garment_image])
-        model_image, garment_image = map(self.encode_img_to_base64, [model_image, garment_image])
+        # Preprocess images only if they are not URLs
+        if not isinstance(model_image, str) or not model_image.startswith('http'):
+            model_image = self.loadimage_to_pil(model_image)
+            model_image = self.maybe_resize_image(model_image)
+            model_image = self.encode_img_to_base64(model_image)
+        
+        if not isinstance(garment_image, str) or not garment_image.startswith('http'):
+            garment_image = self.loadimage_to_pil(garment_image)
+            garment_image = self.maybe_resize_image(garment_image)
+            garment_image = self.encode_img_to_base64(garment_image)
+
         pbar.update(1)
 
         # Prepare API request
@@ -153,7 +160,7 @@ class FASHN:
             if status_data["status"] == "completed":
                 break
             elif status_data["status"] not in ["starting", "in_queue", "processing"]:
-                raise Exception(f"Prediction failed with id {pred_id}: {status_data.get('error')}")
+                raise Exception(f"Prediction failed with id {pred_id}: {status_data.get('error')}. Inputs: {inputs}")
 
             pbar.update(1)
             time.sleep(3)

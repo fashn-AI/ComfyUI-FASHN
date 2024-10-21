@@ -107,9 +107,16 @@ class FASHN:
         pbar = ProgressBar(total=7 + num_samples)
 
         # Preprocess images
-        model_image, garment_image = map(self.loadimage_to_pil, [model_image, garment_image])
-        model_image, garment_image = map(self.maybe_resize_image, [model_image, garment_image])
-        model_image, garment_image = map(self.encode_img_to_base64, [model_image, garment_image])
+        def process_image(image):
+            if isinstance(image, str) and (image.startswith('http://') or image.startswith('https://')):
+                return image  # It's a URL, don't preprocess
+            else:
+                img = self.loadimage_to_pil(image)
+                img = self.maybe_resize_image(img)
+                return self.encode_img_to_base64(img)
+
+        model_image = process_image(model_image)
+        garment_image = process_image(garment_image)
 
         pbar.update(1)
 

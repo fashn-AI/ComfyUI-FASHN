@@ -96,8 +96,6 @@ class FASHN:
         num_samples,
         fashn_api_key=None,
     ):
-        raise Exception(f"model_image: {model_image}, garment_image: {garment_image}")
-
         # Environment variables
         ENDPOINT_URL = os.getenv("FASHN_ENDPOINT_URL", "https://api.fashn.ai/v1")
         API_KEY = fashn_api_key or os.getenv("FASHN_API_KEY")
@@ -108,16 +106,10 @@ class FASHN:
         # Progress bar
         pbar = ProgressBar(total=7 + num_samples)
 
-        # Preprocess images only if they are not URLs
-        if not isinstance(model_image, str) or not model_image.startswith('http'):
-            model_image = self.loadimage_to_pil(model_image)
-            model_image = self.maybe_resize_image(model_image)
-            model_image = self.encode_img_to_base64(model_image)
-        
-        if not isinstance(garment_image, str) or not garment_image.startswith('http'):
-            garment_image = self.loadimage_to_pil(garment_image)
-            garment_image = self.maybe_resize_image(garment_image)
-            garment_image = self.encode_img_to_base64(garment_image)
+        # Preprocess images
+        model_image, garment_image = map(self.loadimage_to_pil, [model_image, garment_image])
+        model_image, garment_image = map(self.maybe_resize_image, [model_image, garment_image])
+        model_image, garment_image = map(self.encode_img_to_base64, [model_image, garment_image])
 
         pbar.update(1)
 

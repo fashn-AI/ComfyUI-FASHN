@@ -116,6 +116,7 @@ class FASHN:
         # if seed is greater than 2^32, we need to convert it to a 32-bit integer
         if seed > 2**32:
             seed = int(seed & 0xFFFFFFFF)
+        print(f"seed: {seed}")
 
         # Prepare API request
         headers = {
@@ -140,9 +141,12 @@ class FASHN:
 
         # Make API request
         session = requests.Session()
-        response = session.post(f"{ENDPOINT_URL}/run", headers=headers, json=inputs, timeout=60)
-        response.raise_for_status()
-        pred_id = response.json().get("id")
+        try:
+            response = session.post(f"{ENDPOINT_URL}/run", headers=headers, json=inputs, timeout=60)
+            response.raise_for_status()
+            pred_id = response.json().get("id")
+        except requests.exceptions.RequestException as e:
+            raise Exception(f"API call failed: {str(e)} - Req Body: {inputs}") from e
         pbar.update(1)
 
         # Poll the status of the prediction

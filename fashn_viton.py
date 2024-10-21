@@ -97,7 +97,7 @@ class FASHN:
         fashn_api_key=None,
     ):
         # Environment variables
-        ENDPOINT_URL = os.getenv("FASHN_ENDPOINT_URL", "https://api.fashn.ai/v1/")
+        ENDPOINT_URL = os.getenv("FASHN_ENDPOINT_URL", "https://api.fashn.ai/v1")
         API_KEY = fashn_api_key or os.getenv("FASHN_API_KEY")
 
         if not API_KEY:
@@ -107,10 +107,23 @@ class FASHN:
         pbar = ProgressBar(total=7 + num_samples)
 
         # Preprocess images
-        model_image, garment_image = map(self.loadimage_to_pil, [model_image, garment_image])
-        model_image, garment_image = map(self.maybe_resize_image, [model_image, garment_image])
-        model_image, garment_image = map(self.encode_img_to_base64, [model_image, garment_image])
+        def process_image(image):
+            if isinstance(image, str) and (image.startswith('http://') or image.startswith('https://')):
+                return image  # It's a URL, don't preprocess
+            else:
+                img = self.loadimage_to_pil(image)
+                img = self.maybe_resize_image(img)
+                return self.encode_img_to_base64(img)
+
+        model_image = process_image(model_image)
+        garment_image = process_image(garment_image)
+
         pbar.update(1)
+
+        # if seed is greater than 2^32, we need to convert it to a 32-bit integer
+        if seed > 2**32:
+            seed = int(seed & 0xFFFFFFFF)
+        print(f"seed: {seed}")
 
         # Prepare API request
         headers = {
@@ -135,9 +148,12 @@ class FASHN:
 
         # Make API request
         session = requests.Session()
-        response = session.post(f"{ENDPOINT_URL}/run", headers=headers, json=inputs, timeout=60)
-        response.raise_for_status()
-        pred_id = response.json().get("id")
+        try:
+            response = session.post(f"{ENDPOINT_URL}/run", headers=headers, json=inputs, timeout=60)
+            response.raise_for_status()
+            pred_id = response.json().get("id")
+        except requests.exceptions.RequestException as e:
+            raise Exception(f"API call failed: {str(e)} - Req Body: {inputs}") from e
         pbar.update(1)
 
         # Poll the status of the prediction
@@ -153,7 +169,7 @@ class FASHN:
             if status_data["status"] == "completed":
                 break
             elif status_data["status"] not in ["starting", "in_queue", "processing"]:
-                raise Exception(f"Prediction failed: {status_data.get('error')}")
+                raise Exception(f"Prediction failed with id {pred_id}: {status_data.get('error')}. Inputs: {inputs}")
 
             pbar.update(1)
             time.sleep(3)

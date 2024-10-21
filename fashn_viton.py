@@ -96,6 +96,8 @@ class FASHN:
         num_samples,
         fashn_api_key=None,
     ):
+        raise Exception(f"model_image: {model_image}, garment_image: {garment_image}")
+
         # Environment variables
         ENDPOINT_URL = os.getenv("FASHN_ENDPOINT_URL", "https://api.fashn.ai/v1")
         API_KEY = fashn_api_key or os.getenv("FASHN_API_KEY")

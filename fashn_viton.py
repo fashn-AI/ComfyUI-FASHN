@@ -48,13 +48,6 @@ class FASHN:
         return f"data:image/jpeg;base64,{img_str}"
 
     @staticmethod
-    def maybe_resize_image(img: Image.Image, target_width: int = 384, target_height: int = 576):
-        if img.width > target_width or img.height > target_height:
-            img.thumbnail((target_width, target_height), resample=Image.Resampling.LANCZOS)
-
-        return img
-
-    @staticmethod
     def loadimage_to_pil(img_tensor_bhwc: torch.Tensor):
         img_np = img_tensor_bhwc.squeeze(0).numpy()
         return Image.fromarray((img_np * 255).astype(np.uint8))
@@ -115,7 +108,6 @@ class FASHN:
                 return image  # It's a URL, don't preprocess
             else:
                 img = self.loadimage_to_pil(image)
-                img = self.maybe_resize_image(img)
                 return self.encode_img_to_base64(img)
 
         model_image = process_image(model_image)

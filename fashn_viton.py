@@ -78,6 +78,25 @@ class FASHN:
     def shorten_string(s: str, max_len: int = 50):
         return s[:max_len] + "..." if len(s) > max_len else s
 
+    @staticmethod
+    def make_api_request(session, url, headers, data=None, method='GET', max_retries=3, timeout=60):
+        for attempt in range(max_retries):
+            try:
+                if method.upper() == 'GET':
+                    response = session.get(url, headers=headers, timeout=timeout)
+                elif method.upper() == 'POST':
+                    response = session.post(url, headers=headers, json=data, timeout=timeout)
+                else:
+                    raise ValueError(f"Unsupported HTTP method: {method}")
+                
+                response.raise_for_status()
+                return response.json()
+            except requests.exceptions.RequestException as e:
+                if attempt == max_retries - 1:  # If it's the last attempt
+                    raise Exception(f"API call failed after {max_retries} attempts: {str(e)}") from e
+                print(f"Attempt {attempt + 1} failed. Retrying...")
+                time.sleep(2)  # Wait for 2 seconds before retrying
+
     def fashn_tryon(
         self,
         model_image,
@@ -144,10 +163,15 @@ class FASHN:
         # Make API request
         session = requests.Session()
         try:
-            response = session.post(f"{ENDPOINT_URL}/run", headers=headers, json=inputs, timeout=60)
-            response.raise_for_status()
-            pred_id = response.json().get("id")
-        except requests.exceptions.RequestException as e:
+            response_data = self.make_api_request(
+                session,
+                f"{ENDPOINT_URL}/run",
+                headers=headers,
+                data=inputs,
+                method='POST'
+            )
+            pred_id = response_data.get("id")
+        except Exception as e:
             inputs["model_image"] = self.shorten_string(inputs["model_image"])
             inputs["garment_image"] = self.shorten_string(inputs["garment_image"])
             raise Exception(f"API call failed: {str(e)} - Req Body: {inputs}") from e
@@ -159,9 +183,15 @@ class FASHN:
             if time.time() - start_time > 180:  # 3 minutes timeout
                 raise Exception("Maximum polling time exceeded.")
 
-            status_response = session.get(f"{ENDPOINT_URL}/status/{pred_id}", headers=headers, timeout=60)
-            status_response.raise_for_status()
-            status_data = status_response.json()
+            try:
+                status_data = self.make_api_request(
+                    session,
+                    f"{ENDPOINT_URL}/status/{pred_id}",
+                    headers=headers,
+                    method='GET'
+                )
+            except Exception as e:
+                raise Exception(f"Status check failed: {str(e)}") from e
 
             if status_data["status"] == "completed":
                 break

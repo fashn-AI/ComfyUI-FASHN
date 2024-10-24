@@ -136,6 +136,10 @@ class FASHN:
         model_image = process_image(model_image)
         garment_image = process_image(garment_image)
 
+        # if seed is greater than 2^32, we need to convert it to a 32-bit integer
+        if seed > 2**32:
+            seed = int(seed & 0xFFFFFFFF)
+
         pbar.update(1)
 
         # Prepare API request

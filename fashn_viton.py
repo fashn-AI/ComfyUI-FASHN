@@ -6,8 +6,9 @@ from io import BytesIO
 import numpy as np
 import requests
 import torch
-from comfy.utils import ProgressBar
 from PIL import Image
+
+from comfy.utils import ProgressBar
 
 
 class FASHN:
@@ -26,7 +27,8 @@ class FASHN:
                 "adjust_hands": ("BOOLEAN", {"default": False}),
                 "restore_background": ("BOOLEAN", {"default": False}),
                 "restore_clothes": ("BOOLEAN", {"default": False}),
-                "guidance_scale": ("FLOAT", {"default": 2.5, "min": 1.5, "max": 5.0, "step": 0.1}),
+                "remove_garment_background": ("BOOLEAN", {"default": False}),
+                "guidance_scale": ("FLOAT", {"default": 3.0, "min": 1.5, "max": 5.0, "step": 0.1}),
                 "timesteps": ("INT", {"default": 50, "min": 20, "max": 50, "step": 1}),
                 "seed": ("INT", {"default": 42}),
                 "num_samples": ("INT", {"default": 1, "min": 1, "max": 4, "step": 1}),
@@ -90,6 +92,7 @@ class FASHN:
         adjust_hands,
         restore_background,
         restore_clothes,
+        remove_garment_background,
         guidance_scale,
         timesteps,
         seed,
@@ -108,7 +111,7 @@ class FASHN:
 
         # Preprocess images
         def process_image(image):
-            if isinstance(image, str) and (image.startswith('http://') or image.startswith('https://')):
+            if isinstance(image, str) and (image.startswith("http://") or image.startswith("https://")):
                 return image  # It's a URL, don't preprocess
             else:
                 img = self.loadimage_to_pil(image)
@@ -119,11 +122,6 @@ class FASHN:
         garment_image = process_image(garment_image)
 
         pbar.update(1)
-
-        # if seed is greater than 2^32, we need to convert it to a 32-bit integer
-        if seed > 2**32:
-            seed = int(seed & 0xFFFFFFFF)
-        print(f"seed: {seed}")
 
         # Prepare API request
         headers = {
@@ -140,6 +138,7 @@ class FASHN:
             "adjust_hands": adjust_hands,
             "restore_background": restore_background,
             "restore_clothes": restore_clothes,
+            "remove_garment_background": remove_garment_background,
             "guidance_scale": guidance_scale,
             "timesteps": timesteps,
             "seed": seed,

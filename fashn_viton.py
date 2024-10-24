@@ -74,6 +74,10 @@ class FASHN:
         img = torch.from_numpy(img).to(dtype=torch.float32) / 255.0
         return img
 
+    @staticmethod
+    def shorten_string(s: str, max_len: int = 50):
+        return s[:max_len] + "..." if len(s) > max_len else s
+
     def fashn_tryon(
         self,
         model_image,
@@ -144,6 +148,8 @@ class FASHN:
             response.raise_for_status()
             pred_id = response.json().get("id")
         except requests.exceptions.RequestException as e:
+            inputs["model_image"] = self.shorten_string(inputs["model_image"])
+            inputs["garment_image"] = self.shorten_string(inputs["garment_image"])
             raise Exception(f"API call failed: {str(e)} - Req Body: {inputs}") from e
         pbar.update(1)
 

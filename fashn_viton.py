@@ -28,7 +28,8 @@ class FASHN:
                 "restore_background": ("BOOLEAN", {"default": False}),
                 "restore_clothes": ("BOOLEAN", {"default": False}),
                 "remove_garment_background": ("BOOLEAN", {"default": False}),
-                "guidance_scale": ("FLOAT", {"default": 3.0, "min": 1.5, "max": 5.0, "step": 0.1}),
+                "long_top": ("BOOLEAN", {"default": False}),
+                "guidance_scale": ("FLOAT", {"default": 2.0, "min": 1.5, "max": 5.0, "step": 0.1}),
                 "timesteps": ("INT", {"default": 50, "min": 20, "max": 50, "step": 1}),
                 "seed": ("INT", {"default": 42}),
                 "num_samples": ("INT", {"default": 1, "min": 1, "max": 4, "step": 1}),
@@ -79,16 +80,16 @@ class FASHN:
         return s[:max_len] + "..." if len(s) > max_len else s
 
     @staticmethod
-    def make_api_request(session, url, headers, data=None, method='GET', max_retries=3, timeout=60):
+    def make_api_request(session, url, headers, data=None, method="GET", max_retries=3, timeout=60):
         for attempt in range(max_retries):
             try:
-                if method.upper() == 'GET':
+                if method.upper() == "GET":
                     response = session.get(url, headers=headers, timeout=timeout)
-                elif method.upper() == 'POST':
+                elif method.upper() == "POST":
                     response = session.post(url, headers=headers, json=data, timeout=timeout)
                 else:
                     raise ValueError(f"Unsupported HTTP method: {method}")
-                
+
                 response.raise_for_status()
                 return response.json()
             except requests.exceptions.RequestException as e:
@@ -109,6 +110,7 @@ class FASHN:
         restore_background,
         restore_clothes,
         remove_garment_background,
+        long_top,
         guidance_scale,
         timesteps,
         seed,
@@ -158,6 +160,7 @@ class FASHN:
             "restore_background": restore_background,
             "restore_clothes": restore_clothes,
             "remove_garment_background": remove_garment_background,
+            "long_top": long_top,
             "guidance_scale": guidance_scale,
             "timesteps": timesteps,
             "seed": seed,
@@ -168,11 +171,7 @@ class FASHN:
         session = requests.Session()
         try:
             response_data = self.make_api_request(
-                session,
-                f"{ENDPOINT_URL}/run",
-                headers=headers,
-                data=inputs,
-                method='POST'
+                session, f"{ENDPOINT_URL}/run", headers=headers, data=inputs, method="POST"
             )
             pred_id = response_data.get("id")
         except Exception as e:
@@ -189,10 +188,7 @@ class FASHN:
 
             try:
                 status_data = self.make_api_request(
-                    session,
-                    f"{ENDPOINT_URL}/status/{pred_id}",
-                    headers=headers,
-                    method='GET'
+                    session, f"{ENDPOINT_URL}/status/{pred_id}", headers=headers, method="GET"
                 )
             except Exception as e:
                 raise Exception(f"Status check failed: {str(e)}") from e

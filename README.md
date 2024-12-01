@@ -33,11 +33,7 @@ You can provide the API key to the node in 2 ways:
 
 ### Quick Start
 
-An example workflow, as shown in the screenshot above, is provided in a `workflow.json` file in this repository. Alternatively, you can drag-and-drop the following image into ComfyUI:
-
-<p align="center">
-    <img src="workflow.png" alt="workflow">
-</p>
+An example workflow, as shown in the screenshot above, is provided in a `workflow.json` file in this repository.
 
 ### Helpful Guides and Documentation
 

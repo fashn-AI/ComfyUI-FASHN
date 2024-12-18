@@ -21,16 +21,15 @@ class FASHN:
                 "category": (["tops", "bottoms", "one-pieces"],),
             },
             "optional": {
-                "flat_lay": ("BOOLEAN", {"default": False}),
+                "garment_photo_type": (["auto", "model", "flat-lay"], {"default": "auto"}),
                 "nsfw_filter": ("BOOLEAN", {"default": True}),
                 "cover_feet": ("BOOLEAN", {"default": False}),
                 "adjust_hands": ("BOOLEAN", {"default": False}),
                 "restore_background": ("BOOLEAN", {"default": False}),
                 "restore_clothes": ("BOOLEAN", {"default": False}),
-                "remove_garment_background": ("BOOLEAN", {"default": False}),
                 "long_top": ("BOOLEAN", {"default": False}),
-                "guidance_scale": ("FLOAT", {"default": 2.0, "min": 1.5, "max": 5.0, "step": 0.1}),
-                "timesteps": ("INT", {"default": 50, "min": 20, "max": 50, "step": 1}),
+                "guidance_scale": ("FLOAT", {"default": 2.0, "min": 1.5, "max": 3.0, "step": 0.1}),
+                "timesteps": ("INT", {"default": 50, "min": 10, "max": 50, "step": 1}),
                 "seed": ("INT", {"default": 42}),
                 "num_samples": ("INT", {"default": 1, "min": 1, "max": 4, "step": 1}),
                 "fashn_api_key": ("STRING", {"multiline": False}),
@@ -58,16 +57,14 @@ class FASHN:
         response = session.get(url, stream=True)
         response.raise_for_status()
 
-        # Check if the content type is an image
         content_type = response.headers.get("Content-Type", "")
         if not content_type.startswith("image/"):
             raise ValueError(f"The URL's Content-Type is not an image. Content-Type: {content_type}")
 
-        # Use BytesIO to create an in-memory binary stream
         img_bytes = BytesIO(response.content)
         with Image.open(img_bytes) as img:
-            img.load()  # Load the image here to ensure it can be opened
-            return img.copy()  # Return a copy to ensure the file pointer doesn't affect the image
+            img.load()
+            return img.copy()
 
     @staticmethod
     def pil_to_torch_hwc(img: Image.Image):
@@ -93,23 +90,22 @@ class FASHN:
                 response.raise_for_status()
                 return response.json()
             except requests.exceptions.RequestException as e:
-                if attempt == max_retries - 1:  # If it's the last attempt
+                if attempt == max_retries - 1:
                     raise Exception(f"API call failed after {max_retries} attempts: {str(e)}") from e
                 print(f"Attempt {attempt + 1} failed. Retrying...")
-                time.sleep(2)  # Wait for 2 seconds before retrying
+                time.sleep(2)
 
     def fashn_tryon(
         self,
         model_image,
         garment_image,
         category,
-        flat_lay,
+        garment_photo_type,
         nsfw_filter,
         cover_feet,
         adjust_hands,
         restore_background,
         restore_clothes,
-        remove_garment_background,
         long_top,
         guidance_scale,
         timesteps,
@@ -117,20 +113,17 @@ class FASHN:
         num_samples,
         fashn_api_key=None,
     ):
-        # Environment variables
         ENDPOINT_URL = os.getenv("FASHN_ENDPOINT_URL", "https://api.fashn.ai/v1")
         API_KEY = fashn_api_key or os.getenv("FASHN_API_KEY")
 
         if not API_KEY:
             raise ValueError("FASHN_API_KEY must be set in environment variables or provided as fashn_api_key.")
 
-        # Progress bar
         pbar = ProgressBar(total=7 + num_samples)
 
-        # Preprocess images
         def process_image(image):
             if isinstance(image, str) and (image.startswith("http://") or image.startswith("https://")):
-                return image  # It's a URL, don't preprocess
+                return image
             else:
                 img = self.loadimage_to_pil(image)
                 return self.encode_img_to_base64(img)
@@ -138,7 +131,6 @@ class FASHN:
         model_image = process_image(model_image)
         garment_image = process_image(garment_image)
 
-        # if seed is greater than 2^32, we need to convert it to a 32-bit integer
         if seed > 2**32:
             seed = int(seed & 0xFFFFFFFF)
 
@@ -149,17 +141,17 @@ class FASHN:
             "Content-Type": "application/json",
             "Authorization": f"Bearer {API_KEY}",
         }
+
         inputs = {
             "model_image": model_image,
             "garment_image": garment_image,
             "category": category,
-            "flat_lay": flat_lay,
+            "garment_photo_type": garment_photo_type,
             "nsfw_filter": nsfw_filter,
             "cover_feet": cover_feet,
             "adjust_hands": adjust_hands,
             "restore_background": restore_background,
             "restore_clothes": restore_clothes,
-            "remove_garment_background": remove_garment_background,
             "long_top": long_top,
             "guidance_scale": guidance_scale,
             "timesteps": timesteps,

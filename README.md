@@ -37,10 +37,8 @@ An example workflow, as shown in the screenshot above, is provided in a `workflo
 
 ### Helpful Guides and Documentation
 
-To get the most out of the FASHN API, we recommend to read the following guides to better understand all node features and parameters:
-1. [FASHN Features Guide: Part I (Model & Garment Controls)](https://fashn.ai/blog/getting-the-best-virtual-try-on-results-part-i)
-2. [FASHN Features Guide: Part II (Sampling Controls)](https://fashn.ai/blog/getting-the-best-virtual-try-on-results-part-ii)
+To get the most out of the FASHN API, we recommend to read the following guide to better understand all node features and parameters: [FASHN API Parameters Guide](https://docs.fashn.ai/guides/api-parameters-guide)
 
-You can also review the official [API Docs](https://docs.fashn.ai/) for a concise summary of each of the parameters function and usage.
+You can also review the official [API Docs](https://docs.fashn.ai/fashn-api/endpoints#request) for a concise summary of each of the parameters function and usage.
 
 

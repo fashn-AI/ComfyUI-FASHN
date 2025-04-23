@@ -24,11 +24,7 @@ class FASHN:
                 "mode": (["performance", "balanced", "quality"], {"default": "balanced"}),
                 "garment_photo_type": (["auto", "model", "flat-lay"], {"default": "auto"}),
                 "moderation_level": (["none", "permissive", "conservative"], {"default": "permissive"}),
-                "cover_feet": ("BOOLEAN", {"default": False}),
-                "adjust_hands": ("BOOLEAN", {"default": False}),
-                "restore_background": ("BOOLEAN", {"default": False}),
-                "restore_clothes": ("BOOLEAN", {"default": False}),
-                "long_top": ("BOOLEAN", {"default": False}),
+                "segmentation_free": ("BOOLEAN", {"default": True}),
                 "seed": ("INT", {"default": 42}),
                 "num_samples": ("INT", {"default": 1, "min": 1, "max": 4, "step": 1}),
                 "fashn_api_key": ("STRING", {"multiline": False}),
@@ -102,11 +98,7 @@ class FASHN:
         mode,
         garment_photo_type,
         moderation_level,
-        cover_feet,
-        adjust_hands,
-        restore_background,
-        restore_clothes,
-        long_top,
+        segmentation_free,
         seed,
         num_samples,
         fashn_api_key=None,
@@ -116,8 +108,6 @@ class FASHN:
 
         if not API_KEY:
             raise ValueError("FASHN_API_KEY must be set in environment variables or provided as fashn_api_key.")
-
-        pbar = ProgressBar(total=7 + num_samples)
 
         def process_image(image):
             if isinstance(image, str) and (image.startswith("http://") or image.startswith("https://")):
@@ -132,8 +122,6 @@ class FASHN:
         if seed > 2**32:
             seed = int(seed & 0xFFFFFFFF)
 
-        pbar.update(1)
-
         # Prepare API request
         headers = {
             "Content-Type": "application/json",
@@ -147,14 +135,23 @@ class FASHN:
             "mode": mode,
             "garment_photo_type": garment_photo_type,
             "moderation_level": moderation_level,
-            "cover_feet": cover_feet,
-            "adjust_hands": adjust_hands,
-            "restore_background": restore_background,
-            "restore_clothes": restore_clothes,
-            "long_top": long_top,
+            "segmentation_free": segmentation_free,
             "seed": seed,
             "num_samples": num_samples,
         }
+
+        # Estimate processing time and initialize progress bar
+        if mode == "performance":
+            base_time = 4
+        elif mode == "quality":
+            base_time = 12
+        else:  # balanced or default
+            base_time = 6
+
+        # Estimate poll time: base_time * (n+2)/3, ensure minimum of 1s
+        estimated_poll_time = max(1.0, base_time * (num_samples + 2) / 3.0)
+
+        pbar = ProgressBar(100) # Progress bar represents percentage
 
         # Make API request
         session = requests.Session()
@@ -167,12 +164,12 @@ class FASHN:
             inputs["model_image"] = self.shorten_string(inputs["model_image"])
             inputs["garment_image"] = self.shorten_string(inputs["garment_image"])
             raise Exception(f"API call failed: {str(e)} - Req Body: {inputs}") from e
-        pbar.update(1)
 
         # Poll the status of the prediction
-        start_time = time.time()
+        start_poll_time = time.time()
         while True:
-            if time.time() - start_time > 180:  # 3 minutes timeout
+            # Check timeout relative to polling start time
+            if time.time() - start_poll_time > 180:  # 3 minutes timeout
                 raise Exception("Maximum polling time exceeded.")
 
             try:
@@ -187,11 +184,21 @@ class FASHN:
             elif status_data["status"] not in ["starting", "in_queue", "processing"]:
                 raise Exception(f"Prediction failed with id {pred_id}: {status_data.get('error')}. Inputs: {inputs}")
 
-            pbar.update(1)
-            time.sleep(3)
+            # Update progress bar based on elapsed time vs estimated time
+            elapsed_poll_time = time.time() - start_poll_time
+            # Ensure progress doesn't exceed 99% during polling to leave room for final step
+            expected_progress = min(99, int((elapsed_poll_time / estimated_poll_time) * 100))
+            increment = expected_progress - pbar.current
+            if increment > 0:
+                 pbar.update(increment)
+
+            time.sleep(2) # Original sleep interval
+
+        # Ensure pbar reaches 100% on successful completion
+        if pbar.current < 100:
+            pbar.update(100 - pbar.current)
 
         # Get the result images
-        pbar.update(1)
         urls = status_data["output"]
         result_imgs = []
         for output_url in urls:

@@ -37,6 +37,18 @@ class FASHN:
 
     @staticmethod
     def encode_img_to_base64(img):
+        """Resizes and encodes an image as a JPEG in Base64 format."""
+        # Resize to max 2000px on largest dimension (only downsample, never upscale)
+        width, height = img.size
+        if max(width, height) > 2000:
+            if height > width:
+                new_height = 2000
+                new_width = int(width * 2000 / height)
+            else:
+                new_width = 2000
+                new_height = int(height * 2000 / width)
+            img = img.resize((new_width, new_height), Image.LANCZOS)
+        
         buffered = BytesIO()
         img.save(buffered, format="JPEG", quality=95)
         img_str = base64.b64encode(buffered.getvalue()).decode()

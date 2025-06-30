@@ -38,7 +38,7 @@ class FASHN:
     @staticmethod
     def encode_img_to_base64(img):
         buffered = BytesIO()
-        img.save(buffered, format="JPEG")
+        img.save(buffered, format="JPEG", quality=95)
         img_str = base64.b64encode(buffered.getvalue()).decode()
         return f"data:image/jpeg;base64,{img_str}"
 
@@ -94,13 +94,14 @@ class FASHN:
         self,
         model_image,
         garment_image,
-        category,
-        mode,
-        garment_photo_type,
-        moderation_level,
-        segmentation_free,
-        seed,
-        num_samples,
+        model_name="tryon-v1.6",
+        category="auto",
+        mode="balanced",
+        garment_photo_type="auto",
+        moderation_level="permissive",
+        segmentation_free=True,
+        seed=42,
+        num_samples=1,
         fashn_api_key=None,
     ):
         ENDPOINT_URL = os.getenv("FASHN_ENDPOINT_URL", "https://api.fashn.ai/v1")
@@ -140,13 +141,19 @@ class FASHN:
             "num_samples": num_samples,
         }
 
+        # Prepare API request data
+        api_data = {
+            "model_name": model_name,
+            "inputs": inputs
+        }
+
         # Estimate processing time and initialize progress bar
         if mode == "performance":
-            base_time = 4
+            base_time = 7
         elif mode == "quality":
-            base_time = 12
+            base_time = 19
         else:  # balanced or default
-            base_time = 6
+            base_time = 10
 
         # Estimate poll time: base_time * (n+2)/3, ensure minimum of 1s
         estimated_poll_time = max(1.0, base_time * (num_samples + 2) / 3.0)
@@ -157,13 +164,15 @@ class FASHN:
         session = requests.Session()
         try:
             response_data = self.make_api_request(
-                session, f"{ENDPOINT_URL}/run", headers=headers, data=inputs, method="POST"
+                session, f"{ENDPOINT_URL}/run", headers=headers, data=api_data, method="POST"
             )
             pred_id = response_data.get("id")
         except Exception as e:
-            inputs["model_image"] = self.shorten_string(inputs["model_image"])
-            inputs["garment_image"] = self.shorten_string(inputs["garment_image"])
-            raise Exception(f"API call failed: {str(e)} - Req Body: {inputs}") from e
+            # Shorten image strings for error reporting
+            error_data = api_data.copy()
+            error_data["inputs"]["model_image"] = self.shorten_string(error_data["inputs"]["model_image"])
+            error_data["inputs"]["garment_image"] = self.shorten_string(error_data["inputs"]["garment_image"])
+            raise Exception(f"API call failed: {str(e)} - Req Body: {error_data}") from e
 
         # Poll the status of the prediction
         start_poll_time = time.time()
@@ -182,7 +191,7 @@ class FASHN:
             if status_data["status"] == "completed":
                 break
             elif status_data["status"] not in ["starting", "in_queue", "processing"]:
-                raise Exception(f"Prediction failed with id {pred_id}: {status_data.get('error')}. Inputs: {inputs}")
+                raise Exception(f"Prediction failed with id {pred_id}: {status_data.get('error')}. Inputs: {api_data['inputs']}")
 
             # Update progress bar based on elapsed time vs estimated time
             elapsed_poll_time = time.time() - start_poll_time
